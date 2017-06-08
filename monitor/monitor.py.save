@@ -1,0 +1,24 @@
+# The cloud monitor
+# Its purpose is to bring up and tear down the entire cloud service,
+# to create/remove instances when necessary (scaling, robustness)
+# and to monitor the health and usage of the VM's that are part of
+# the cloud service.
+
+class Monitor:
+  pass
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-o", "--operation",
+        metavar = "VM_OPERATION",
+        help = "The operation that you want to perform",
+        required = True,
+        choices=["create","listVM","VMIP","terminate","listIP","assignFIP","monitor"],
+        dest="operation")
+
+    parser.add_argument("-n", "--name",
+        metavar = "VM_NAME",
+        help = "The name  for the VM that you want to perform the operation",
+        dest="name")
+	args = parser.parse_args()

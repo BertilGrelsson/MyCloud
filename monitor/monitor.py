@@ -1,49 +1,20 @@
-# Blah
+# The cloud monitor
+# Its purpose is to bring up and tear down the entire cloud service,
+# to create/remove instances when necessary (scaling, robustness)
+# and to monitor the health and usage of the VM's that are part of
+# the cloud service.
+
 
 import datetime
 import openStackHandler as OpenStackHandler
-
-import socket
-
-class VMHandler:
-  def __init__(self, vm_instance, ip):
-    self.vm_instance = vm_instance
-    self.socket = socket.socket()
-    self.socket.setblocking(0)
-    self.port = 12345
-    self.host = ip
-    self.socket.bind(self.host, self.port)
-    self.buffer_size = 4096
-
-  def try_connect(self):
-    try:
-      self.socket.connect()
-      return True
-    except Exception as e:
-      return False
-
-  def send_config(self, conf):
-    try:
-      self.socket.send(conf)
-      return True
-    except Exception as e:
-      return False
-
-  def try_recieve(self):
-    try:
-      data = self.socket.recv(4096)
-      return data
-    except Exception as e:
-      return []
+import vmhandler as VMHandler
 
 class Monitor:
   def __init__(self):
     self.open_stack_handler = OpenStackHandler()
 
     self.worker_counter = 0
-    self.workers_started = []
-    self.workers_configurating = []
-    self.workers_running = []
+    self.workers = []
 
     self.start_time = -1
 
@@ -62,7 +33,27 @@ class Monitor:
     for k in range(0, self.config.n_workers):
        self.create_worker()
 
-   def create_worker(self):
+    while True:
+      # Manage workers
+      for worker in self.workers:
+        worker.update()
+        # TODO Log status
+        if worker.state == VM_STATE.UNRESPONSIVE:
+          worker.shut_down()
+          # TODO Remove worker from workers
+        elif worker.state == VM_STATE.WORKING:
+          # TODO Collect measurements if suitable
+          pass
+
+      # Control number of workers
+      # TODO
+      
+      # Communicate with outside.
+      #  * Report status and measurements.
+      #  * Take commands.
+      # TODO
+
+  def create_worker(self):
     vm_name = "worker"+str(self.backend_counter)
     self.worker_counter += 1
     vm = self.open_stack_handler.createVM(vm_name,
@@ -71,7 +62,7 @@ class Monitor:
                                          self.config.worker_script)
     ip = self.open_stack_handler.getInternalIP(vm_name)
     vm_handler = VMHandler(vm, ip)
-    self.workers_started.append(vm_handler)
+    self.workers.append(vm_handler)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
